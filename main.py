@@ -29,9 +29,36 @@ class TopLevelAgent(Agent):
         async def start_database_agent(self, data):
             database_agent = DatabaseAgent("database@localhost", "db")
             await database_agent.start()
+            #message = spade.message.Message(to=str(database_agent.jid))
+            #message.body = json.dumps(data)
+            #await self.send(message)
+            last_post = data[0] if data else None
             message = spade.message.Message(to=str(database_agent.jid))
-            message.body = json.dumps(data)
-            await self.send(message)
+            message.body = json.dumps(last_post)
+            response = await self.send_and_wait_for_response(message)
+
+            # Process the response based on its metadata
+            if response:
+                print("got response!", response)
+                if response.metadata["data_exists"]:
+                    print("No new posts.")
+                elif response.metadata.get("json_empty", True):
+                    print("No local file.")
+                    message = spade.message.Message(to=str(database_agent.jid))
+                    message.body = json.dumps(data)
+                    await self.send(message)
+                else:
+                    print("New posts detected")
+        
+        async def send_and_wait_for_response(self, message):
+            response = None
+            try:
+                await self.send(message)
+                response = await self.receive(timeout=100000)
+                if response: 
+                    return response
+            except Exception:
+                print("No response")
 
         async def initialize_scraper(self):
             self.scraper = IndexScraper()
