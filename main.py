@@ -40,7 +40,7 @@ class TopLevelAgent(Agent):
             # Process the response based on its metadata
             if response:
                 print("got response!", response)
-                if response.metadata["data_exists"]:
+                if response.metadata.get("data_exists", True):
                     print("No new posts.")
                 elif response.metadata.get("json_empty", True):
                     print("No local file.")
@@ -49,7 +49,16 @@ class TopLevelAgent(Agent):
                     await self.send(message)
                 else:
                     print("New posts detected")
-        
+                    last_post = response.body
+                    last_post_index = next((i for i, post in enumerate(data) if post["poveznica"] == last_post), None)
+                    posts_to_send = data[:last_post_index] if last_post_index is not None else data
+                    if posts_to_send:
+                        message = spade.message.Message(to=str(database_agent.jid))
+                        message.body = json.dumps(posts_to_send)
+                        await self.send(message)
+                        print(f"Sent {len(posts_to_send)} posts to DatabaseAgent.")
+
+
         async def send_and_wait_for_response(self, message):
             response = None
             try:
