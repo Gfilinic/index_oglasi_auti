@@ -4,21 +4,16 @@ import json
 from spade import wait_until_finished
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour
-
+from auxilaryFunctions import *
 from scraping import IndexScraper
 from databaseAgent import DatabaseAgent
 
 class TopLevelAgent(Agent):
     class PeriodicTaskBehaviour(CyclicBehaviour):
         async def on_start(self):
-            print("Starting behaviour . . .")
-            self.counter = 0
             self.scraper_initialized = False
 
         async def run(self):
-            print("Counter: {}".format(self.counter))
-            self.counter += 1
-
             await self.initialize_scraper()
 
             data = self.scraper.sort_data()
@@ -35,7 +30,7 @@ class TopLevelAgent(Agent):
             last_post = data[0] if data else None
             message = spade.message.Message(to=str(database_agent.jid))
             message.body = json.dumps(last_post)
-            response = await self.send_and_wait_for_response(message)
+            response = await send_and_wait_for_response(self,message)
 
             # Process the response based on its metadata
             if response:
@@ -59,16 +54,7 @@ class TopLevelAgent(Agent):
                         print(f"Sent {len(posts_to_send)} posts to DatabaseAgent.")
 
 
-        async def send_and_wait_for_response(self, message):
-            response = None
-            try:
-                await self.send(message)
-                response = await self.receive(timeout=100000)
-                if response: 
-                    return response
-            except Exception:
-                print("No response")
-
+        
         async def initialize_scraper(self):
             self.scraper = IndexScraper()
             

@@ -4,7 +4,7 @@ from datetime import datetime
 from spade import wait_until_finished
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
-
+from auxilaryFunctions import *
 class DatabaseAgent(Agent):
     class DatabaseAgentBehavior(OneShotBehaviour):
         async def on_start(self):
@@ -35,11 +35,11 @@ class DatabaseAgent(Agent):
                         message.metadata["data_exists"] = False
 
                         print("sent message")
-                        response = await self.send_and_wait_for_response(message)
+                        response = await send_and_wait_for_response(self,message)
                         if response:
                             data=response.body
                             try:
-                                await self.write_json(data)
+                                await write_json(data)
                             except json.JSONDecodeError as e:
                                 print(f"Error decoding JSON: {e}")
                 elif not empty:
@@ -65,11 +65,11 @@ class DatabaseAgent(Agent):
                         response_message.metadata["json_empty"] = False
                         response_message.metadata["data_exists"] = False
                         print("sent message to top LevelAgent: ",response_message.body)
-                        response = await self.send_and_wait_for_response(response_message)
+                        response = await send_and_wait_for_response(self,response_message)
                         if response:
                             data=response.body
                             try:
-                                await self.append_json(data)
+                                await append_json(data)
                             except json.JSONDecodeError as e:
                                 print(f"Error decoding JSON: {e}")
                         
@@ -80,34 +80,7 @@ class DatabaseAgent(Agent):
             print("I am done, hasakey!")
             self.kill()
         
-        async def write_json(self,data):
-            json_filename = 'Index_auti.json'
-            with open(json_filename, 'w', encoding='utf-8') as jsonfile:
-            # Use the json.dump method to write data to the JSON file
-                 json.dump(json.loads(data), jsonfile, indent=2, ensure_ascii=False)
         
-        async def append_json(self,data):
-            json_filename = 'Index_auti.json'
-            try:
-                with open(json_filename, 'r', encoding='utf-8') as existing_file:
-                    existing_data = json.load(existing_file)
-            except FileNotFoundError:
-                existing_data = []
-            combined_data = existing_data + json.loads(data)
-            combined_data = sorted(combined_data, key=lambda x: datetime.strptime(x['datum_objave'], "%d.%m.%Y %H:%M"), reverse=True)
-            # Write the combined data to the file
-            with open(json_filename, 'w', encoding='utf-8') as jsonfile:
-                json.dump(combined_data, jsonfile, indent=2, ensure_ascii=False)
-
-        async def send_and_wait_for_response(self, message):
-            response = None
-            try:
-                await self.send(message)
-                response = await self.receive(timeout=100000)
-                if response: 
-                    return response
-            except Exception:
-                print("No response")
             
             return response
 
