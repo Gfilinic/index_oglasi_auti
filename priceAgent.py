@@ -5,6 +5,8 @@ from spade import wait_until_finished
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, FSMBehaviour, State, Message
 
+from telegramAgent import TelegramAgent
+
 STATE_ONE = "CHECK_LOCAL_DATA"
 STATE_TWO = "STATE_TWO"
 STATE_THREE = "STATE_THREE"
@@ -69,18 +71,17 @@ class StateTwo(State):
         print("I'm at state two")
 
         # Your logic for waiting for a message with new posts goes here
-        while True:
-            msg = await self.receive(timeout=10)
-            if msg:
-                # Transition to the next state
-                
-                data=json.loads(msg.body)
-                try:
-                    await self.check_for_prices(data)
-                    await self.update_average_prices(data)
-                except json.JSONDecodeError as e:
-                    print(f"Error decoding JSON: {e}")
-            self.set_next_state(STATE_THREE)
+        msg = await self.receive(timeout=10)
+        if msg:
+            # Transition to the next state
+            
+            data=json.loads(msg.body)
+            try:
+                await self.check_for_prices(data)
+                await self.update_average_prices(data)
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON: {e}")
+        self.set_next_state(STATE_THREE)
 
 
     async def update_average_prices(self, new_data):
@@ -133,7 +134,8 @@ class StateTwo(State):
     async def check_for_prices(self,data):
         with open('average_prices.json', 'r', encoding='utf-8') as jsonfile:
             average_prices = json.load(jsonfile)
-
+        self.agent.notification_list = []
+        
         for entry in data:
             marka = entry.get('marka', 'Undefined')
             cijena = entry.get('cijena', 0)
@@ -144,16 +146,28 @@ class StateTwo(State):
                     average_price = average_prices[marka]['average']
 
                     if cijena < average_price:
-                        print(f"Post with marka '{marka}' has a price lower than average: {cijena} < {average_price}")
-
+                            print(f"Post with marka '{marka}' has a price lower than average: {cijena} < {average_price}")
+                            notification_message = (
+                            f"Marka: {marka}\n"
+                            f"Cijena: {cijena}\n"
+                            f"Link: {entry['poveznica']}\n"
+                            f"Opis: {entry['opis']}\n"
+                            f"Godina proizvodnje: {entry['godina_proizvodnje']}\n"
+                            f"Prosječna cijena za {marka}: {average_price}"
+                        )
+                            self.agent.notification_list.append(notification_message)
 
 class StateThree(State):
+            
     async def run(self):
         print("I'm at state three (final state)")
-
-        # Your logic for calculating average prices and saving to prices.json goes here
-
-        # No final state is set since this is a final state
+        notification_list = self.agent.notification_list
+        telegram_agent = TelegramAgent("telegramAgent@localhost", "telegram")
+        await telegram_agent.start()
+        message = spade.message.Message(to=str(telegram_agent.jid))
+        message.body = json.dumps(notification_list)
+        await self.send(message)
+        await wait_until_finished(telegram_agent)
         self.kill()
 
 class PriceAgent(Agent):
