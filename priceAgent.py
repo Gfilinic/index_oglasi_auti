@@ -25,9 +25,14 @@ class StateOne(State):
         if not os.path.exists('average_prices.json'):
             print("Prices file does not exist. Creating and populating...")
 
-            # Load data from index_auti.json
+                # Load data from index_auti.json
+            self.create_local_file()
+        
+        self.set_next_state(STATE_TWO)
+    
+    def create_local_file(self):
         with open('Index_auti.json', 'r', encoding='utf-8') as index_file:
-            data = json.load(index_file)
+                data = json.load(index_file)
 
         average_prices = {}
 
@@ -55,7 +60,7 @@ class StateOne(State):
             json.dump(average_prices, jsonfile, indent=2, ensure_ascii=False)
 
         print(f"Average prices saved to {json_filename}")
-        self.set_next_state(STATE_TWO)
+        self.kill()
 
 
 class StateTwo(State):
@@ -63,11 +68,44 @@ class StateTwo(State):
         print("I'm at state two")
 
         # Your logic for waiting for a message with new posts goes here
-        msg = await self.receive(timeout=1)
+        msg = await self.receive(timeout=10000000)
         if msg:
             # Transition to the next state
-            self.set_next_state(STATE_THREE)
+            
+            data=json.loads(msg.body)
+            try:
+                await self.update_average_prices(data)
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON: {e}")
+        self.set_next_state(STATE_THREE)
+    async def update_average_prices(self, new_data):
+        with open('average_prices.json', 'r', encoding='utf-8') as jsonfile:
+            average_prices = json.load(jsonfile)
 
+        for entry in new_data:
+            marka = entry.get('marka', 'undefined')
+            cijena = entry.get('cijena', 0)
+
+            # Exclude entries with a price of 0
+            if cijena > 0:
+                if marka not in average_prices:
+                    average_prices[marka] = {'sum': cijena, 'count': 1}
+                else:
+                    average_prices[marka]['sum'] += cijena
+                    average_prices[marka]['count'] += 1
+
+        # Calculate the average for each 'Marka'
+        for marka, values in average_prices.items():
+            average_prices[marka]['average'] = values['sum'] / values['count']
+
+        average_prices["Undefined"] = average_prices.pop("")
+
+        # Save the updated average_prices to the JSON file
+        json_filename = 'average_prices.json'
+        with open(json_filename, 'w', encoding='utf-8') as jsonfile:
+            json.dump(average_prices, jsonfile, indent=2, ensure_ascii=False)
+
+        print(f"Updated average prices saved to {json_filename}")
 
 class StateThree(State):
     async def run(self):
@@ -90,6 +128,7 @@ class PriceAgent(Agent):
 
 
 
+"""
 async def main():
     price_agent = PriceAgent("price@localhost", "price")
     await price_agent.start()
@@ -99,3 +138,5 @@ async def main():
 
 if __name__ == "__main__":
     spade.run(main())
+"""
+

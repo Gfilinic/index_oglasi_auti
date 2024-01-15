@@ -7,6 +7,7 @@ from spade.behaviour import CyclicBehaviour
 from auxilaryFunctions import *
 from scraping import IndexScraper
 from databaseAgent import DatabaseAgent
+from priceAgent import PriceAgent
 
 class TopLevelAgent(Agent):
     class PeriodicTaskBehaviour(CyclicBehaviour):
@@ -17,16 +18,13 @@ class TopLevelAgent(Agent):
             await self.initialize_scraper()
 
             data = self.scraper.sort_data()
-            comparison_task = asyncio.create_task(self.start_database_agent(data))
+            comparison_task = asyncio.create_task(self.start_agents(data))
             await asyncio.gather(comparison_task)
             await asyncio.sleep(6000)
 
-        async def start_database_agent(self, data):
+        async def start_agents(self, data):
             database_agent = DatabaseAgent("database@localhost", "db")
             await database_agent.start()
-            #message = spade.message.Message(to=str(database_agent.jid))
-            #message.body = json.dumps(data)
-            #await self.send(message)
             last_post = data[0] if data else None
             message = spade.message.Message(to=str(database_agent.jid))
             message.body = json.dumps(last_post)
@@ -52,6 +50,13 @@ class TopLevelAgent(Agent):
                         message.body = json.dumps(posts_to_send)
                         await self.send(message)
                         print(f"Sent {len(posts_to_send)} posts to DatabaseAgent.")
+
+                        price_agent = PriceAgent("price@localhost", "price")
+                        await price_agent.start()
+                        message = spade.message.Message(to=str(price_agent.jid))
+                        message.body = json.dumps(posts_to_send)
+                        await self.send(message)
+                        print(f"Sent {len(posts_to_send)} posts to PriceAgent.")
 
 
         
