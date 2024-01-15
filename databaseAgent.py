@@ -50,7 +50,7 @@ class DatabaseAgent(Agent):
                     if local_data[0]["poveznica"] == json.loads(data)["poveznica"]:
                         print("Received post is the same as the last one in the database.")
                         message = spade.message.Message(to=str(sender_jid))
-                        message.body = "File not found"
+                        message.body = "Data is in sync!"
                         message.metadata["json_empty"] = False
                         message.metadata["data_exists"] = True
                         await self.send(message)
@@ -79,10 +79,6 @@ class DatabaseAgent(Agent):
 
             print("I am done, hasakey!")
             self.kill()
-        
-        
-            
-            return response
 
     async def setup(self):
         b = self.DatabaseAgentBehavior()
