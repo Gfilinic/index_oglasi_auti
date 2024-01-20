@@ -8,13 +8,12 @@ class IndexScraper:
     def __init__(self):
         self.links = []      # treba mi zasebna lista za pojedinačno otvaranje oglasa
         self.data_gla = {}   # zaglavlje oglasa - treba mi šifra i županija, koju kasnije spajam s pojedinačnim oglasom, koristim dictionary radi lakšeg pozivanja županije preko šifre
-        self.data_det = []   # pojedičnačni oglasi; ne sadržavaju županiju
+        self.data_det = []   # pojedičnačni oglasi;
         self.last_page = 1
 
         self.find_last_page()
         self.fill_headers()
         self.open_posts()
-        #self.write_json()
         
         
 
@@ -154,7 +153,23 @@ class IndexScraper:
 
         print('Zaglavlja oglasa napunjena: ' + datetime.now().strftime("%H:%M:%S") + ' h')
 
+    
+
     def sort_data(self):
+        def find_marka_from_naslov(naslov):
+                file_path = 'average_prices.json'
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as json_file:
+                        average_prices_dict = json.load(json_file)
+                except FileNotFoundError:
+                    print("No marka lookupFile?")
+                    return ""
+            # Assuming you have loaded average prices data into average_prices_dict
+                for marka, details in average_prices_dict.items():
+                    if marka.lower() in naslov.lower():
+                        print(f"Matched '{marka}' in '{naslov}'")
+                        return marka
+                return "" 
         # Create a list to store the header for the CSV file
         header = [
             'poveznica', 'korisnicko_ime', 'mjesto', 'zupanija', 'naslov', 'opis',
@@ -169,36 +184,18 @@ class IndexScraper:
         # ... (your existing code remains unchanged until this point)
         data = []
         for self.row_num, self.data_det_row in enumerate(self.data_det):
+            if not self.data_det_row[header.index('marka')]:
+                self.data_det_row[header.index('marka')] = find_marka_from_naslov(self.data_det_row[header.index('naslov')])
             data.append({header[i]: self.data_det_row[i] for i in range(len(header))})
 
         # Sort json_data based on 'datum_objave'
         data = sorted(data, key=lambda x: datetime.strptime(x['datum_objave'], "%d.%m.%Y %H:%M"), reverse=True)
+        
         return data
     
-    def write_json(self):
-        # Create a list to store the header for the CSV file
-        json_header = [
-            'poveznica', 'korisnicko_ime', 'mjesto', 'zupanija', 'naslov', 'opis',
-            'cijena', 'sifra_oglasa', 'datum_objave', 'broj_prikaza', 'marka',
-            'model', 'tip', 'motor', 'stanje_vozila', 'kilometraza', 'godina_proizvodnje',
-            'snaga_motora_kw', 'godina_modela', 'prodavac', 'registriran_do',
-            'boja_vozila', 'broj_stupnjeva_na_mjenjacu', 'broj_vrata', 'oblik_karoserije',
-            'potrosnja_goriva', 'radni_obujam_cm3', 'ovjes', 'starost', 'vrsta_pogona',
-            'vrsta_mjenjaca', 'autoradio', 'klimatizacija_vozila'
-        ]
-
-        # ... (your existing code remains unchanged until this point)
-        json_data = []
-        for row_num, self.data_det_row in enumerate(self.data_det):
-            json_data.append({json_header[i]: self.data_det_row[i] for i in range(len(json_header))})
-
-        # Sort json_data based on 'datum_objave'
-        json_data = sorted(json_data, key=lambda x: datetime.strptime(x['datum_objave'], "%d.%m.%Y %H:%M"), reverse=True)
-        # Write data to JSON file
-        json_filename = 'Index_auti.json'
-        with open(json_filename, 'w', encoding='utf-8') as jsonfile:
-            # Use the json.dump method to write data to the JSON file
-            json.dump(json_data, jsonfile, indent=2, ensure_ascii=False)  # indent for pretty formatting
+        
+    
+   
 
 
 
