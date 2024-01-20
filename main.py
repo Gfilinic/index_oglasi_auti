@@ -14,7 +14,7 @@ class TopLevelAgent(Agent):
         async def on_start(self):
             self.scraper_initialized = False
             self.price_agent = PriceAgent("price@localhost", "price")
-            await self.price_agent.start()
+        
 
         async def run(self):
             print("---------------------")
@@ -23,7 +23,7 @@ class TopLevelAgent(Agent):
             data = self.scraper.sort_data()
             comparison_task = asyncio.create_task(self.start_agents(data))
             await asyncio.gather(comparison_task)
-            await asyncio.sleep(5)
+            await asyncio.sleep(600)
 
         async def start_agents(self, data):
             database_agent = DatabaseAgent("database@localhost", "db")
@@ -73,12 +73,17 @@ class TopLevelAgent(Agent):
         self.add_behaviour(b)
 
 async def main():
+  
     top_agent = TopLevelAgent("post@localhost", "main")
     await top_agent.start()
     print("Top agent started. Check its console to see the output.")
 
     print("Wait until user interrupts with ctrl+C")
-    await wait_until_finished(top_agent)
+    try:
+        await wait_until_finished(top_agent)
+    except KeyboardInterrupt:
+        top_agent.stop()
+        print("Interrupted!")
 
 if __name__ == "__main__":
     spade.run(main())

@@ -6,7 +6,7 @@ from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, FSMBehaviour, State, Message
 
 from telegramAgent import TelegramAgent
-
+from negotiationAgent import BuyerAgent, SellerAgent
 STATE_ONE = "CHECK_LOCAL_DATA"
 STATE_TWO = "STATE_TWO"
 STATE_THREE = "STATE_THREE"
@@ -15,6 +15,8 @@ STATE_THREE = "STATE_THREE"
 class PriceFSMBehaviour(FSMBehaviour):
     async def on_start(self):
         print(f"FSM starting at initial state {self.current_state}")
+        
+
 
     async def on_end(self):
         print(f"FSM finished at state {self.current_state}")
@@ -29,7 +31,7 @@ class StateOne(State):
 
                 # Load data from index_auti.json
             if self.create_local_file():
-                self.kill()
+                self.agent.stop()
         else:
             self.set_next_state(STATE_TWO)
     
@@ -64,7 +66,8 @@ class StateOne(State):
 
         print(f"Average prices saved to {json_filename}")
         return True
-
+    async def on_end(self):
+        print("I am done")
 
 class StateTwo(State):
     async def run(self):
@@ -135,7 +138,7 @@ class StateTwo(State):
         with open('average_prices.json', 'r', encoding='utf-8') as jsonfile:
             average_prices = json.load(jsonfile)
         self.agent.notification_list = []
-        
+        counter = 0
         for entry in data:
             marka = entry.get('marka', 'Undefined')
             cijena = entry.get('cijena', 0)
@@ -144,18 +147,35 @@ class StateTwo(State):
             if cijena > 0:
                 if marka in average_prices:
                     average_price = average_prices[marka]['average']
-
                     if cijena < average_price:
-                            print(f"Post with marka '{marka}' has a price lower than average: {cijena} < {average_price}")
-                            notification_message = (
-                            f"Marka: {marka}\n"
-                            f"Cijena: {cijena}\n"
-                            f"Link: {entry['poveznica']}\n"
-                            f"Opis: {entry['opis']}\n"
-                            f"Godina proizvodnje: {entry['godina_proizvodnje']}\n"
-                            f"Prosječna cijena za {marka}: {average_price}"
-                        )
-                            self.agent.notification_list.append(notification_message)
+                                counter+=1
+                                buyer_jid = f"buyer_{counter}@localhost"
+                                seller_jid = f"seller_{counter}@localhost"
+                                buyerAgent = BuyerAgent(buyer_jid,"buyer",cijena, seller_jid)
+                                sellerAgent = SellerAgent(seller_jid,"seller",cijena, buyer_jid)
+                                await buyerAgent.start()
+                                await sellerAgent.start()
+                               
+                                received_msg = await self.receive(timeout=10)
+                                if received_msg:
+                                    print("Received message")
+                                    negotiation_price = received_msg.body
+                                    print(f"Post with marka '{marka}' has a price lower than average: {cijena} < {average_price}")
+                                    notification_message = (
+                                    f"Link: {entry['poveznica']}\n"
+                                    f"Marka: {marka}\n"
+                                    f"Cijena: {cijena}\n"
+                                    f"Godina proizvodnje: {entry['godina_proizvodnje']}\n"
+                                    f"-------------------------------------------------\n"
+                                    f"Opis: {entry['opis']}\n"
+                                    f"-------------------------------------------------\n"
+                                    f"Prosječna cijena za {marka}: {int(average_price)}\n"
+                                    f"Preporučena cijena za pregovaranje: {negotiation_price}\n"
+                                    )
+                                    self.agent.notification_list.append(notification_message)
+                    else:
+                        print("No offers below average!")
+            
 
 class StateThree(State):
             
