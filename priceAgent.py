@@ -28,7 +28,6 @@ class StateOne(State):
         print("I'm at state one (initial state)")
         if not os.path.exists('average_prices.json'):
             print("Prices file does not exist. Creating and populating...")
-
                 # Load data from index_auti.json
             if self.create_local_file():
                 self.agent.stop()
@@ -72,12 +71,9 @@ class StateOne(State):
 class StateTwo(State):
     async def run(self):
         print("I'm at state two")
-
         # Your logic for waiting for a message with new posts goes here
         msg = await self.receive(timeout=10)
         if msg:
-            # Transition to the next state
-            
             data=json.loads(msg.body)
             try:
                 await self.check_for_prices(data)
@@ -90,13 +86,11 @@ class StateTwo(State):
     async def update_average_prices(self, new_data):
         with open('average_prices.json', 'r', encoding='utf-8') as jsonfile:
             average_prices = json.load(jsonfile)
-
         undefined_sum = average_prices.get("Undefined", {"sum": 0})["sum"]
         undefined_count = average_prices.get("Undefined", {"count": 0})["count"]
         for entry in new_data:
             marka = entry.get('marka', 'undefined')
             cijena = entry.get('cijena', 0)
-            
             # Exclude entries with a price of 0
             if cijena > 0:
                 if marka not in average_prices:
@@ -104,18 +98,14 @@ class StateTwo(State):
                 else:
                     average_prices[marka]['sum'] += cijena
                     average_prices[marka]['count'] += 1
-
                 if marka == "":
                     undefined_sum += cijena
                     undefined_count += 1
-                
-
         undefined_sum += average_prices.get("Undefined", {"sum": 0})["sum"]
         undefined_count += average_prices.get("Undefined", {"count": 0})["count"]
         # Calculate the average for each 'Marka'
         for marka, values in average_prices.items():
             average_prices[marka]['average'] = values['sum'] / values['count']
-
         if undefined_count > 0:
             average_prices["Undefined"] = {
                 'sum': undefined_sum,
@@ -131,7 +121,6 @@ class StateTwo(State):
         json_filename = 'average_prices.json'
         with open(json_filename, 'w', encoding='utf-8') as jsonfile:
             json.dump(average_prices, jsonfile, indent=2, ensure_ascii=False)
-
         print(f"Updated average prices saved to {json_filename}")
 
     async def check_for_prices(self,data):
@@ -178,7 +167,6 @@ class StateTwo(State):
             
 
 class StateThree(State):
-            
     async def run(self):
         print("I'm at state three (final state)")
         notification_list = self.agent.notification_list

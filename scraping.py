@@ -40,8 +40,6 @@ class IndexScraper:
                 li_split2 = li_split[1].split("\">")
                 if int(li_split2[0]) > self.last_page:
                     self.last_page =  int(li_split2[0])
-
-        #print(self.last_page)
         print('Zadnja stranica pronađena: ' + str(self.last_page) + ' --> ' + datetime.now().strftime("%H:%M") + ' h')
 
     def open_posts(self):
@@ -128,7 +126,6 @@ class IndexScraper:
                             oglas_det[31] = str(li.find_next_sibling('li').get_text()).replace('\r','').replace('\n','')
                         case 'Klimatizacija vozila':
                             oglas_det[32] = str(li.find_next_sibling('li').get_text()).replace('\r','').replace('\n','')
-            #print(oglas)
             self.data_det.append(oglas_det)
             if i != 0 and (i == 1 or i % 500 == 0): print('Oglas broj: ' + str(i) + ' / ' + str(len(self.links)) + ' --> ' + datetime.now().strftime("%H:%M") + ' h')
 
@@ -164,13 +161,12 @@ class IndexScraper:
                 except FileNotFoundError:
                     print("No marka lookupFile?")
                     return ""
-            # Assuming you have loaded average prices data into average_prices_dict
                 for marka, details in average_prices_dict.items():
                     if marka.lower() in naslov.lower():
                         print(f"Matched '{marka}' in '{naslov}'")
                         return marka
                 return "" 
-        # Create a list to store the header for the CSV file
+        # kreiranje liste za header csv-a
         header = [
             'poveznica', 'korisnicko_ime', 'mjesto', 'zupanija', 'naslov', 'opis',
             'cijena', 'sifra_oglasa', 'datum_objave', 'broj_prikaza', 'marka',
@@ -181,14 +177,13 @@ class IndexScraper:
             'vrsta_mjenjaca', 'autoradio', 'klimatizacija_vozila'
         ]
 
-        # ... (your existing code remains unchanged until this point)
         data = []
         for self.row_num, self.data_det_row in enumerate(self.data_det):
             if not self.data_det_row[header.index('marka')]:
                 self.data_det_row[header.index('marka')] = find_marka_from_naslov(self.data_det_row[header.index('naslov')])
             data.append({header[i]: self.data_det_row[i] for i in range(len(header))})
 
-        # Sort json_data based on 'datum_objave'
+        # Sortiraj json_data prema 'datum_objave'
         data = sorted(data, key=lambda x: datetime.strptime(x['datum_objave'], "%d.%m.%Y %H:%M"), reverse=True)
         
         return data
