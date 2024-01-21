@@ -12,7 +12,7 @@ class BuyerAgent(Agent):
             await asyncio.sleep(0.5)
             print(f"{self.agent.jid} agent started!\n")
             self.max_price = self.agent.price
-            self.min_price = int(6/10 * self.max_price)
+            self.min_price = int(8/10 * self.max_price)
             self.proposal = random.uniform(self.min_price, self.max_price)
             self.round = 1
             self.accepted_offer = False
@@ -39,10 +39,11 @@ class BuyerAgent(Agent):
                         print(f"{self.agent.jid} (Round {self.round}): Accepted the offer! (Minimal acceptance price reached)")
                         self.accepted_offer = True
                         self.accepted_proposal = received_proposal
-                        msg = Message(to="pricepro@localhost")
+                        msg = Message(to="price@localhost")
                         msg.body = str(int(self.accepted_proposal))
                         await self.send(msg)
-                        
+                        print("Buyer sent price proposal to price agent!")
+
                         await self.agent.stop()
                     else:
                         # Adjust acceptance threshold based on negotiation progress
@@ -63,11 +64,12 @@ class BuyerAgent(Agent):
                 else:
                     print(f"{self.agent.jid} (Round {self.round}): Didn't receive anything")
 
-                    
+
 
         async def on_end(self):
-            pass
+            print("buyer over")
             
+
 
     def __init__(self, jid, password, price, seller_jid):
         super().__init__(jid, password)
@@ -83,7 +85,7 @@ class SellerAgent(Agent):
         async def on_start(self):
             print(f"{self.agent.jid} agent started!\n")
             self.max_price = self.agent.price
-            self.min_price = float(8/10 * self.max_price)
+            self.min_price = float(6/10 * self.max_price)
             self.proposal = random.uniform(self.min_price, self.max_price)
             self.round = 1
 

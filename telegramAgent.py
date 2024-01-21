@@ -22,13 +22,14 @@ class TelegramAgent(Agent):
             print("Notification sent to Telegram!")
         async def run(self):
             print("run the bot")
-            msg = await self.receive(timeout=10)
+            msg = await self.receive(timeout=30)
             if msg:
                 notification_list = json.loads(msg.body)
                 for entry in notification_list:
                     message = f"Pozdrav, ovaj oglas mogao bi te zanimati\n{entry}"
                     await self.send_telegram_notification(self.bot_token, self.chat_id, message)
-
+            else:
+                print("Nemam obavijesti za poslati")
 
             '''
             msg = await self.receive(timeout=100000)

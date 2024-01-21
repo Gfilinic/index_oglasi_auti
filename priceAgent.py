@@ -4,12 +4,12 @@ import spade
 from spade import wait_until_finished
 from spade.agent import Agent
 from spade.behaviour import CyclicBehaviour, FSMBehaviour, State, Message
-
+import asyncio
 from telegramAgent import TelegramAgent
 from negotiationAgent import BuyerAgent, SellerAgent
 STATE_ONE = "CHECK_LOCAL_DATA"
-STATE_TWO = "STATE_TWO"
-STATE_THREE = "STATE_THREE"
+STATE_TWO = "CHECK_UPDATE_PRICES"
+STATE_THREE = "SEND_NOTIFICATION"
 
 
 class PriceFSMBehaviour(FSMBehaviour):
@@ -145,7 +145,7 @@ class StateTwo(State):
                                 await buyerAgent.start()
                                 await sellerAgent.start()
                                
-                                received_msg = await self.receive(timeout=10)
+                                received_msg = await self.receive(timeout=60)
                                 if received_msg:
                                     print("Received message")
                                     negotiation_price = received_msg.body
@@ -163,20 +163,22 @@ class StateTwo(State):
                                     )
                                     self.agent.notification_list.append(notification_message)
                     else:
-                        print("No offers below average!")
+                        print("Offer not below average!")
             
 
 class StateThree(State):
     async def run(self):
         print("I'm at state three (final state)")
         notification_list = self.agent.notification_list
+        print("Veličina notification lista:",len(notification_list))
         telegram_agent = TelegramAgent("telegramAgent@localhost", "telegram")
         await telegram_agent.start()
+        await asyncio.sleep(5)
         message = spade.message.Message(to=str(telegram_agent.jid))
         message.body = json.dumps(notification_list)
         await self.send(message)
         await wait_until_finished(telegram_agent)
-        self.kill()
+        self.stop()
 
 class PriceAgent(Agent):
     async def setup(self):
