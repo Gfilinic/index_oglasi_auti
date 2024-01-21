@@ -12,7 +12,6 @@ from priceAgent import PriceAgent
 class TopLevelAgent(Agent):
     class PeriodicTaskBehaviour(CyclicBehaviour):
         async def on_start(self):
-            self.scraper_initialized = False
             self.price_agent = PriceAgent("price@localhost", "price")
         
 

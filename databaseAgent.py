@@ -95,8 +95,6 @@ class DatabaseAgent(Agent):
                         #await self.write_json(json.dumps(local_data))
     async def setup(self):
         b = self.CheckIfEmptyBehavior()
-        
-
         self.add_behaviour(b)
         
         
