@@ -53,15 +53,12 @@ class TopLevelAgent(Agent):
                         message.body = json.dumps(posts_to_send)
                         await self.send(message)
                         print(f"Sent {len(posts_to_send)} posts to DatabaseAgent.")
-                        
                         await self.price_agent.start()
                         
                         message = spade.message.Message(to=str(self.price_agent.jid))
                         message.body = json.dumps(posts_to_send)
                         await self.send(message)
                         print(f"Sent {len(posts_to_send)} posts to PriceAgent.")
-
-
         
         async def initialize_scraper(self):
             self.scraper = IndexScraper()

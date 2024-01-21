@@ -6,8 +6,8 @@ import requests
 
 class IndexScraper:
     def __init__(self):
-        self.links = []      # treba mi zasebna lista za pojedinačno otvaranje oglasa
-        self.data_gla = {}   # zaglavlje oglasa - treba mi šifra i županija, koju kasnije spajam s pojedinačnim oglasom, koristim dictionary radi lakšeg pozivanja županije preko šifre
+        self.links = []      #za pojedinačno otvaranje oglasa
+        self.data_gla = {}   # zaglavlje oglasa -  šifra i županija,kasnije se spaja s pojedinačnim oglasom, koristim dictionary radi lakšeg pozivanja županije preko šifre
         self.data_det = []   # pojedičnačni oglasi;
         self.last_page = 1
 
@@ -22,7 +22,7 @@ class IndexScraper:
         print( str(elapsed_time) + ' sekundi' )
 
     def find_last_page(self):
-        #otvaram prvu stranicu da bi pronašao last_page
+        #otvaramo prvu stranicu da bi se pronašao last_page
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/111.0.1",
             "Accept-Encoding": "*",
